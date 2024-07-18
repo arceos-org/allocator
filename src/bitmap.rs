@@ -15,8 +15,6 @@ type BitAllocUsed = bitmap_allocator::BitAlloc1M;
 /// allocated.
 ///
 /// The `PAGE_SIZE` must be a power of two.
-///
-/// [bitmap_allocator]: https://github.com/rcore-os/bitmap-allocator
 pub struct BitmapPageAllocator<const PAGE_SIZE: usize> {
     base: usize,
     total_pages: usize,
