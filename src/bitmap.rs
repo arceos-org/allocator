@@ -7,7 +7,12 @@ use bitmap_allocator::BitAlloc;
 use crate::{AllocError, AllocResult, BaseAllocator, PageAllocator};
 
 // Support max 1M * 4096 = 4GB memory.
+#[cfg(not(feature = "64G"))]
 type BitAllocUsed = bitmap_allocator::BitAlloc1M;
+
+// Support max 16M * 4096 = 64GB memory.
+#[cfg(feature = "64G")]
+type BitAllocUsed = bitmap_allocator::BitAlloc16M;
 
 /// A page-granularity memory allocator based on the [bitmap_allocator].
 ///
@@ -74,9 +79,15 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
     }
 
     fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
-        // TODO: not decrease `used_pages` if deallocation failed
-        self.used_pages -= num_pages;
-        self.inner.dealloc((pos - self.base) / PAGE_SIZE)
+        if match num_pages.cmp(&1) {
+            core::cmp::Ordering::Equal => self.inner.dealloc((pos - self.base) / PAGE_SIZE),
+            core::cmp::Ordering::Greater => self
+                .inner
+                .dealloc_contiguous((pos - self.base) / PAGE_SIZE, num_pages),
+            _ => false,
+        } {
+            self.used_pages -= num_pages;
+        }
     }
 
     fn total_pages(&self) -> usize {
@@ -89,5 +100,32 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
 
     fn available_pages(&self) -> usize {
         self.total_pages - self.used_pages
+    }
+}
+
+impl<const PAGE_SIZE: usize> BitmapPageAllocator<PAGE_SIZE> {
+    /// Allocate pages at a specific address.
+    pub fn alloc_pages_at(
+        &mut self,
+        base: usize,
+        num_pages: usize,
+        align_pow2: usize,
+    ) -> AllocResult<usize> {
+        if align_pow2 % PAGE_SIZE != 0 {
+            return Err(AllocError::InvalidParam);
+        }
+        let align_pow2 = align_pow2 / PAGE_SIZE;
+        if !align_pow2.is_power_of_two() {
+            return Err(AllocError::InvalidParam);
+        }
+        let align_log2 = align_pow2.trailing_zeros() as usize;
+
+        let idx = (base - self.base) / PAGE_SIZE;
+
+        self.inner
+            .alloc_contiguous_at(idx, num_pages, align_log2)
+            .map(|idx| idx * PAGE_SIZE + self.base)
+            .ok_or(AllocError::NoMemory)
+            .inspect(|_| self.used_pages += num_pages)
     }
 }

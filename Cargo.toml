@@ -20,12 +20,16 @@ slab = ["dep:slab_allocator"]
 buddy = ["dep:buddy_system_allocator"]
 
 allocator_api = []
+64G = []
 
 [dependencies]
 rlsf = { version = "0.2", optional = true }
 buddy_system_allocator = { version = "0.10", default-features = false, optional = true }
 slab_allocator = { git = "https://github.com/arceos-org/slab_allocator.git", tag = "v0.3.1", optional = true }
 bitmap-allocator = { version = "0.1", optional = true }
+
+[patch.crates-io]
+bitmap-allocator = { git = "https://github.com/hky1999/bitmap-allocator.git", branch = "alloc_at" }
 
 [dev-dependencies]
 allocator = { path = ".", features = ["full"] }
