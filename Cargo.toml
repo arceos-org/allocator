@@ -25,9 +25,6 @@ page-alloc-1t = []
 page-alloc-64g = []
 page-alloc-4g = []
 page-alloc-256m = []
-page-alloc-16m = []
-page-alloc-1m = []
-page-alloc-64k = []
 
 [dependencies]
 cfg-if = "1.0"

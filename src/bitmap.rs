@@ -14,18 +14,9 @@ if #[cfg(feature = "page-alloc-1t")] {
 } else if #[cfg(feature = "page-alloc-4g")] {
     /// Support max 1M * PAGE_SIZE = 4GB memory (assume that PAGE_SIZE = 4KB).
     type BitAllocUsed = bitmap_allocator::BitAlloc1M;
-} else if #[cfg(feature = "page-alloc-256m")] {
+} else {// #[cfg(feature = "page-alloc-256m")]
     /// Support max 64K * PAGE_SIZE = 256MB memory (assume that PAGE_SIZE = 4KB).
     type BitAllocUsed = bitmap_allocator::BitAlloc64K;
-} else if #[cfg(feature = "page-alloc-16m")] {
-    /// Support max 4K * PAGE_SIZE = 16MB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc4K;
-} else if #[cfg(feature = "page-alloc-1m")] {
-    /// Support max 256 * PAGE_SIZE = 1MB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc256;
-} else {
-    /// Support max 16 * PAGE_SIZE = 64KB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc16;
 }
 }
 
@@ -93,31 +84,8 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
         .inspect(|_| self.used_pages += num_pages)
     }
 
-    fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
-        if self
-            .inner
-            .dealloc_contiguous((pos - self.base) / PAGE_SIZE, num_pages)
-        {
-            self.used_pages -= num_pages;
-        }
-    }
-
-    fn total_pages(&self) -> usize {
-        self.total_pages
-    }
-
-    fn used_pages(&self) -> usize {
-        self.used_pages
-    }
-
-    fn available_pages(&self) -> usize {
-        self.total_pages - self.used_pages
-    }
-}
-
-impl<const PAGE_SIZE: usize> BitmapPageAllocator<PAGE_SIZE> {
     /// Allocate pages at a specific address.
-    pub fn alloc_pages_at(
+    fn alloc_pages_at(
         &mut self,
         base: usize,
         num_pages: usize,
@@ -139,5 +107,26 @@ impl<const PAGE_SIZE: usize> BitmapPageAllocator<PAGE_SIZE> {
             .map(|idx| idx * PAGE_SIZE + self.base)
             .ok_or(AllocError::NoMemory)
             .inspect(|_| self.used_pages += num_pages)
+    }
+
+    fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
+        if self
+            .inner
+            .dealloc_contiguous((pos - self.base) / PAGE_SIZE, num_pages)
+        {
+            self.used_pages -= num_pages;
+        }
+    }
+
+    fn total_pages(&self) -> usize {
+        self.total_pages
+    }
+
+    fn used_pages(&self) -> usize {
+        self.used_pages
+    }
+
+    fn available_pages(&self) -> usize {
+        self.total_pages - self.used_pages
     }
 }
