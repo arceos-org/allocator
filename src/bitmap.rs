@@ -1,18 +1,33 @@
 //! Bitmap allocation in page-granularity.
-//!
-//! TODO: adaptive size
 
 use bitmap_allocator::BitAlloc;
 
 use crate::{AllocError, AllocResult, BaseAllocator, PageAllocator};
 
-// Support max 1M * 4096 = 4GB memory.
-#[cfg(not(feature = "64G"))]
-type BitAllocUsed = bitmap_allocator::BitAlloc1M;
-
-// Support max 16M * 4096 = 64GB memory.
-#[cfg(feature = "64G")]
-type BitAllocUsed = bitmap_allocator::BitAlloc16M;
+cfg_if::cfg_if! {
+if #[cfg(feature = "page-alloc-1t")] {
+    /// Support max 256M * PAGE_SIZE = 1TB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc256M;
+} else if #[cfg(feature = "page-alloc-64g")] {
+    /// Support max 16M * PAGE_SIZE = 64GB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc16M;
+} else if #[cfg(feature = "page-alloc-4g")] {
+    /// Support max 1M * PAGE_SIZE = 4GB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc1M;
+} else if #[cfg(feature = "page-alloc-256m")] {
+    /// Support max 64K * PAGE_SIZE = 256MB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc64K;
+} else if #[cfg(feature = "page-alloc-16m")] {
+    /// Support max 4K * PAGE_SIZE = 16MB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc4K;
+} else if #[cfg(feature = "page-alloc-1m")] {
+    /// Support max 256 * PAGE_SIZE = 1MB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc256;
+} else {
+    /// Support max 16 * PAGE_SIZE = 64KB memory (assume that PAGE_SIZE = 4KB).
+    type BitAllocUsed = bitmap_allocator::BitAlloc16;
+}
+}
 
 /// A page-granularity memory allocator based on the [bitmap_allocator].
 ///
@@ -79,13 +94,10 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
     }
 
     fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
-        if match num_pages.cmp(&1) {
-            core::cmp::Ordering::Equal => self.inner.dealloc((pos - self.base) / PAGE_SIZE),
-            core::cmp::Ordering::Greater => self
-                .inner
-                .dealloc_contiguous((pos - self.base) / PAGE_SIZE, num_pages),
-            _ => false,
-        } {
+        if self
+            .inner
+            .dealloc_contiguous((pos - self.base) / PAGE_SIZE, num_pages)
+        {
             self.used_pages -= num_pages;
         }
     }
