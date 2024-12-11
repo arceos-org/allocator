@@ -140,6 +140,14 @@ const fn align_up(pos: usize, align: usize) -> usize {
     (pos + align - 1) & !(align - 1)
 }
 
+/// Checks whether the address has the demanded alignment.
+///
+/// Equivalent to `addr % align == 0`, but the alignment must be a power of two.
+#[inline]
+const fn is_aligned(base_addr: usize, align: usize) -> bool {
+    base_addr & (align - 1) == 0
+}
+
 #[cfg(feature = "allocator_api")]
 mod allocator_api {
     extern crate alloc;
