@@ -94,16 +94,17 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
         if align_pow2 % PAGE_SIZE != 0 {
             return Err(AllocError::InvalidParam);
         }
+
+        // Check if the base address is aligned to the given alignment and the given PAGE_SIZE.
+        if !crate::is_aligned(base, align_pow2) || !crate::is_aligned(base, Self::PAGE_SIZE) {
+            return Err(AllocError::InvalidParam);
+        }
+
         let align_pow2 = align_pow2 / PAGE_SIZE;
         if !align_pow2.is_power_of_two() {
             return Err(AllocError::InvalidParam);
         }
         let align_log2 = align_pow2.trailing_zeros() as usize;
-
-        // Check if the base address is aligned to the given PAGE_SIZE.
-        if !crate::is_aligned(base, Self::PAGE_SIZE) {
-            return Err(AllocError::InvalidParam);
-        }
 
         let idx = (base - self.base) / PAGE_SIZE;
 
