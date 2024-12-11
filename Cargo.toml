@@ -11,7 +11,7 @@ documentation = "https://arceos-org.github.io/allocator"
 
 [features]
 default = ["page-alloc-4g"]
-full = ["bitmap", "tlsf", "slab", "buddy", "allocator_api","page-alloc-4g"]
+full = ["bitmap", "tlsf", "slab", "buddy", "allocator_api", "page-alloc-4g"]
 
 bitmap = ["dep:bitmap-allocator"]
 
