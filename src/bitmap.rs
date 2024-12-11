@@ -5,19 +5,19 @@ use bitmap_allocator::BitAlloc;
 use crate::{AllocError, AllocResult, BaseAllocator, PageAllocator};
 
 cfg_if::cfg_if! {
-if #[cfg(feature = "page-alloc-1t")] {
-    /// Support max 256M * PAGE_SIZE = 1TB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc256M;
-} else if #[cfg(feature = "page-alloc-64g")] {
-    /// Support max 16M * PAGE_SIZE = 64GB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc16M;
-} else if #[cfg(feature = "page-alloc-4g")] {
-    /// Support max 1M * PAGE_SIZE = 4GB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc1M;
-} else {// #[cfg(feature = "page-alloc-256m")]
-    /// Support max 64K * PAGE_SIZE = 256MB memory (assume that PAGE_SIZE = 4KB).
-    type BitAllocUsed = bitmap_allocator::BitAlloc64K;
-}
+    if #[cfg(feature = "page-alloc-1t")] {
+        /// Support max 256M * PAGE_SIZE = 1TB memory (assume that PAGE_SIZE = 4KB).
+        type BitAllocUsed = bitmap_allocator::BitAlloc256M;
+    } else if #[cfg(feature = "page-alloc-64g")] {
+        /// Support max 16M * PAGE_SIZE = 64GB memory (assume that PAGE_SIZE = 4KB).
+        type BitAllocUsed = bitmap_allocator::BitAlloc16M;
+    } else if #[cfg(feature = "page-alloc-4g")] {
+        /// Support max 1M * PAGE_SIZE = 4GB memory (assume that PAGE_SIZE = 4KB).
+        type BitAllocUsed = bitmap_allocator::BitAlloc1M;
+    } else {// #[cfg(feature = "page-alloc-256m")]
+        /// Support max 64K * PAGE_SIZE = 256MB memory (assume that PAGE_SIZE = 4KB).
+        type BitAllocUsed = bitmap_allocator::BitAlloc64K;
+    }
 }
 
 /// A page-granularity memory allocator based on the [bitmap_allocator].
@@ -100,6 +100,11 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
         }
         let align_log2 = align_pow2.trailing_zeros() as usize;
 
+        // Check if the base address is aligned to the given PAGE_SIZE.
+        if !Self::is_aligned(base) {
+            return Err(AllocError::InvalidParam);
+        }
+
         let idx = (base - self.base) / PAGE_SIZE;
 
         self.inner
@@ -110,6 +115,8 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
     }
 
     fn dealloc_pages(&mut self, pos: usize, num_pages: usize) {
+        assert!(Self::is_aligned(pos), "pos must be aligned to PAGE_SIZE");
+
         if self
             .inner
             .dealloc_contiguous((pos - self.base) / PAGE_SIZE, num_pages)
@@ -128,5 +135,15 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
 
     fn available_pages(&self) -> usize {
         self.total_pages - self.used_pages
+    }
+}
+
+impl<const PAGE_SIZE: usize> BitmapPageAllocator<PAGE_SIZE> {
+    /// Checks whether the address has the demanded alignment.
+    ///
+    /// Equivalent to `addr % align == 0`, but the alignment must be a power of two.
+    #[inline]
+    const fn is_aligned(base_addr: usize) -> bool {
+        base_addr & (PAGE_SIZE - 1) == 0
     }
 }

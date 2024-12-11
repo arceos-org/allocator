@@ -10,8 +10,8 @@ repository = "https://github.com/arceos-org/allocator"
 documentation = "https://arceos-org.github.io/allocator"
 
 [features]
-default = ["page-alloc-4g"]
-full = ["bitmap", "tlsf", "slab", "buddy", "allocator_api", "page-alloc-4g"]
+default = ["page-alloc-256m"]
+full = ["bitmap", "tlsf", "slab", "buddy", "allocator_api", "page-alloc-256m"]
 
 bitmap = ["dep:bitmap-allocator"]
 
