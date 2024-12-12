@@ -78,10 +78,8 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
     const PAGE_SIZE: usize = PAGE_SIZE;
 
     fn alloc_pages(&mut self, num_pages: usize, align_pow2: usize) -> AllocResult<usize> {
-        if align_pow2 > MAX_ALIGN_1GB {
-            return Err(AllocError::InvalidParam);
-        }
-        if align_pow2 % PAGE_SIZE != 0 {
+        // Check if the alignment is valid.
+        if align_pow2 > MAX_ALIGN_1GB || !crate::is_aligned(align_pow2, PAGE_SIZE) {
             return Err(AllocError::InvalidParam);
         }
         let align_pow2 = align_pow2 / PAGE_SIZE;
@@ -108,15 +106,12 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
         num_pages: usize,
         align_pow2: usize,
     ) -> AllocResult<usize> {
-        if align_pow2 > MAX_ALIGN_1GB {
-            return Err(AllocError::InvalidParam);
-        }
-        if align_pow2 % PAGE_SIZE != 0 {
-            return Err(AllocError::InvalidParam);
-        }
-
-        // Check if the base address is aligned to the given alignment and the given PAGE_SIZE.
-        if !crate::is_aligned(base, align_pow2) || !crate::is_aligned(base, Self::PAGE_SIZE) {
+        // Check if the alignment is valid,
+        // and the base address is aligned to the given alignment.
+        if align_pow2 > MAX_ALIGN_1GB
+            || !crate::is_aligned(align_pow2, PAGE_SIZE)
+            || !crate::is_aligned(base, align_pow2)
+        {
             return Err(AllocError::InvalidParam);
         }
 
