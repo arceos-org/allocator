@@ -55,8 +55,8 @@ impl<const PAGE_SIZE: usize> BaseAllocator for BitmapPageAllocator<PAGE_SIZE> {
         assert!(PAGE_SIZE.is_power_of_two());
 
         // Range for real:  [align_up(start, PAGE_SIZE), align_down(start + size, PAGE_SIZE))
-        let start = crate::align_up(start, PAGE_SIZE);
         let end = crate::align_down(start + size, PAGE_SIZE);
+        let start = crate::align_up(start, PAGE_SIZE);
         self.total_pages = (end - start) / PAGE_SIZE;
 
         // Calculate the base offset stored in the real [`BitAlloc`] instance.
@@ -78,10 +78,9 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
     const PAGE_SIZE: usize = PAGE_SIZE;
 
     fn alloc_pages(&mut self, num_pages: usize, align_pow2: usize) -> AllocResult<usize> {
-        assert!(
-            align_pow2 <= MAX_ALIGN_1GB,
-            "allocator does not support align > 1GB"
-        );
+        if align_pow2 > MAX_ALIGN_1GB {
+            return Err(AllocError::InvalidParam);
+        }
         if align_pow2 % PAGE_SIZE != 0 {
             return Err(AllocError::InvalidParam);
         }
@@ -109,10 +108,9 @@ impl<const PAGE_SIZE: usize> PageAllocator for BitmapPageAllocator<PAGE_SIZE> {
         num_pages: usize,
         align_pow2: usize,
     ) -> AllocResult<usize> {
-        assert!(
-            align_pow2 <= MAX_ALIGN_1GB,
-            "allocator does not support align > 1GB"
-        );
+        if align_pow2 > MAX_ALIGN_1GB {
+            return Err(AllocError::InvalidParam);
+        }
         if align_pow2 % PAGE_SIZE != 0 {
             return Err(AllocError::InvalidParam);
         }
