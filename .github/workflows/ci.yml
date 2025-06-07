@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  # manual trigger
+  workflow_dispatch:
+  # trigger on UTC0 everyday to test on latest nightly toolchain
   schedule:
     - cron: '0 0 * * *'
 
