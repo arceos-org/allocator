@@ -66,11 +66,38 @@ impl<const PAGE_SIZE: usize> BaseAllocator for BitmapPageAllocator<PAGE_SIZE> {
         let start = start - self.base;
         let start_idx = start / PAGE_SIZE;
 
+        if start_idx + self.total_pages > BitAllocUsed::CAP {
+            panic!("BitmapPageAllocator: total pages exceeds the maximum capacity of the bitmap allocator");
+        }
+
         self.inner.insert(start_idx..start_idx + self.total_pages);
     }
 
-    fn add_memory(&mut self, _start: usize, _size: usize) -> AllocResult {
-        Err(AllocError::NoMemory) // unsupported
+    /// Note: currently, this method does check overlapped memory.
+    fn add_memory(&mut self, start: usize, size: usize) -> AllocResult {
+        // Range for real:  [align_up(start, PAGE_SIZE), align_down(start + size, PAGE_SIZE))
+        let end = crate::align_down(start + size, PAGE_SIZE);
+        let start = crate::align_up(start, PAGE_SIZE);
+
+        // Check if the range is valid.
+        if start >= end || start < self.base {
+            return Err(AllocError::InvalidParam);
+        }
+        let new_total_pages = (end - start) / PAGE_SIZE;
+
+        // Range in bitmap: [start - self.base, start - self.base + new_total_pages * PAGE_SIZE)
+        let start = start - self.base;
+
+        let start_idx = start / PAGE_SIZE;
+
+        if start_idx + new_total_pages > BitAllocUsed::CAP {
+            return Err(AllocError::NoMemory);
+        }
+
+        self.inner.insert(start_idx..start_idx + new_total_pages);
+        self.total_pages += new_total_pages;
+
+        Ok(())
     }
 }
 
@@ -186,6 +213,20 @@ mod tests {
         let addr = allocator.alloc_pages(1, PAGE_SIZE).unwrap();
         assert_eq!(addr, 0x1000);
         assert_eq!(allocator.used_pages(), 1);
+        assert_eq!(allocator.available_pages(), 0);
+
+        // Test add memory.
+        // let res = allocator.add_memory(PAGE_SIZE, PAGE_SIZE);
+        // assert_eq!(res, Err(AllocError::MemoryOverlap));
+        let res = allocator.add_memory(0x2000, PAGE_SIZE);
+        assert_eq!(res, Ok(()));
+
+        assert_eq!(allocator.used_pages(), 1);
+        assert_eq!(allocator.available_pages(), 1);
+
+        let addr = allocator.alloc_pages(1, PAGE_SIZE).unwrap();
+        assert_eq!(addr, 0x2000);
+        assert_eq!(allocator.used_pages(), 2);
         assert_eq!(allocator.available_pages(), 0);
     }
 

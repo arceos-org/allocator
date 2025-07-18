@@ -35,7 +35,7 @@ use core::alloc::Layout;
 use core::ptr::NonNull;
 
 /// The error type used for allocation.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AllocError {
     /// Invalid `size` or `align_pow2`. (e.g. unaligned)
     InvalidParam,
