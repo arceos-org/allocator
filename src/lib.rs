@@ -34,6 +34,7 @@ pub use tlsf::TlsfByteAllocator;
 use core::alloc::Layout;
 use core::ptr::NonNull;
 
+#[cfg(feature = "axerrno")]
 use axerrno::AxError;
 
 /// The error type used for allocation.
@@ -49,6 +50,7 @@ pub enum AllocError {
     NotAllocated,
 }
 
+#[cfg(feature = "axerrno")]
 impl From<AllocError> for AxError {
     fn from(value: AllocError) -> Self {
         match value {
