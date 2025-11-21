@@ -1,0 +1,9 @@
+(function() {
+    var implementors = Object.fromEntries([["allocator",[["impl UnsafeUnpin for <a class=\"enum\" href=\"allocator/enum.AllocError.html\" title=\"enum allocator::AllocError\">AllocError</a>",1,["allocator::AllocError"]],["impl UnsafeUnpin for <a class=\"struct\" href=\"allocator/struct.BuddyByteAllocator.html\" title=\"struct allocator::BuddyByteAllocator\">BuddyByteAllocator</a>",1,["allocator::buddy::BuddyByteAllocator"]],["impl UnsafeUnpin for <a class=\"struct\" href=\"allocator/struct.SlabByteAllocator.html\" title=\"struct allocator::SlabByteAllocator\">SlabByteAllocator</a>",1,["allocator::slab::SlabByteAllocator"]],["impl UnsafeUnpin for <a class=\"struct\" href=\"allocator/struct.TlsfByteAllocator.html\" title=\"struct allocator::TlsfByteAllocator\">TlsfByteAllocator</a>",1,["allocator::tlsf::TlsfByteAllocator"]],["impl&lt;A&gt; UnsafeUnpin for <a class=\"struct\" href=\"allocator/struct.AllocatorRc.html\" title=\"struct allocator::AllocatorRc\">AllocatorRc</a>&lt;A&gt;",1,["allocator::allocator_api::AllocatorRc"]],["impl&lt;const PAGE_SIZE: <a class=\"primitive\" href=\"https://doc.rust-lang.org/nightly/core/primitive.usize.html\">usize</a>&gt; UnsafeUnpin for <a class=\"struct\" href=\"allocator/struct.BitmapPageAllocator.html\" title=\"struct allocator::BitmapPageAllocator\">BitmapPageAllocator</a>&lt;PAGE_SIZE&gt;",1,["allocator::bitmap::BitmapPageAllocator"]]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[1354]}
